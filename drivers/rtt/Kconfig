@@ -1,0 +1,101 @@
+menu "Hardware Drivers Config"
+
+menu "Onboard Peripheral Drivers"
+
+endmenu
+
+menu "On-chip Peripheral Drivers"
+
+    config BSP_USING_GPIO
+        bool "Enable GPIO"
+        select RT_USING_PIN
+        default y
+
+    menuconfig BSP_USING_I2C
+        bool "Enable I2C"
+        default n
+        select RT_USING_I2C
+        if BSP_USING_I2C
+            config BSP_USING_SOFT_I2C1
+                bool "Enable Soft I2C1"
+                default n
+                select RT_USING_I2C_BITOPS
+            if BSP_USING_SOFT_I2C1
+                config BSP_I2C1_SCL_PIN
+                    int "I2C1 SCL Pin"
+                    range 1 64
+                    default 9
+
+                config BSP_I2C1_SDA_PIN
+                    int "I2C1 SDA Pin"
+                    range 1 64
+                    default 8
+            endif
+
+            config BSP_USING_SERCOM0_I2C
+                bool "Enalbe SERCOM0 I2C (PA4_SDA & PA5_SCL)"
+                default n
+            if BSP_USING_SERCOM0_I2C
+                config BSP_I2C0_CLOCK
+                    int "I2C0 Clock Frequency"
+                    range 1 1000000
+                    default 100000
+            endif
+
+            config BSP_USING_SERCOM2_I2C
+                bool "Enalbe SERCOM2 I2C (PA8_SDA & PA9_SCL)"
+                default y
+            if BSP_USING_SERCOM2_I2C
+                config BSP_I2C2_CLOCK
+                    int "I2C2 Clock Frequency"
+                    range 1 1000000
+                    default 100000
+            endif
+        endif
+
+    menuconfig BSP_USING_UART
+        bool "Enable UART"
+        default y
+        select RT_USING_SERIAL
+        if BSP_USING_UART
+            config BSP_USING_SERCOM0_USART
+                bool "Enable SERCOM0 USART (PA6_TX & PA7_RX)"
+                default n
+            config BSP_USING_SERCOM3_USART
+                bool "Enable SERCOM3 USART (PA22_TX & PA23_RX)"
+                default y
+        endif
+
+    menuconfig BSP_USING_PWM
+        bool "Enable PWM"
+        default n
+        select RT_USING_PWM
+        if BSP_USING_PWM
+            config BSP_USING_TCC1_PWM
+                bool "Enable PWM1 (PA6, PA7)"
+                default n
+            config BSP_USING_TCC2_PWM
+                bool "Enable PWM2 (PA0, PA1)"
+                default n
+        endif
+
+    menuconfig BSP_USING_SPI
+        bool "Enable SPI"
+        default n
+        select RT_USING_SPI
+        if BSP_USING_SPI
+            config BSP_USING_SERCOM0_SPI
+                bool "Enable SPI0 (PA04-MISO,PA06-MOSI,PA07-SCK)"
+                default n
+            config BSP_USING_SERCOM1_SPI
+                bool "Enable SPI1 (PA16-MISO,PA18-MOSI,PA19-SCK)"
+                default y
+        endif
+
+endmenu
+
+menu "Board extended module Drivers"
+
+endmenu
+
+endmenu
