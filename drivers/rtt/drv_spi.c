@@ -17,7 +17,10 @@
 
 #ifdef RT_USING_SPI
 
-#if defined(BSP_USING_SPI0) || defined(BSP_USING_SPI1)
+#if !defined(BSP_USING_SPI0) && !defined(BSP_USING_SPI1)
+#error "Please define at least one BSP_USING_SPIx in board.h"
+/* this driver can be disabled at menuconfig → RT-Thread Components → Device Drivers */
+#endif
 
 #if defined(BSP_USING_I2C0) && defined(BSP_USING_SPI0)
 #error "Please define only 1 of BSP_USING_I2C0 and BSP_USING_SPI0"
@@ -472,5 +475,4 @@ int rt_hw_spi_init (void)
 }
 INIT_DEVICE_EXPORT (rt_hw_spi_init);
 
-#endif /* BSP_USING_SPI0 || BSP_USING_SPI1 */
 #endif /* RT_USING_SPI */
