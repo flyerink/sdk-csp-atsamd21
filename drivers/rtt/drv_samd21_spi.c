@@ -5,29 +5,29 @@
 #include <string.h>
 
 /* SERCOM clk freq value for the baud calculation */
-#define SERCOM_Frequency      (48000000UL)
+#define SERCOM_Frequency                (BSP_CLOCK_SYSTEM_FREQ_MHZ * 1000000UL)
 
 /* SERCOM SPI baud value for 1000000 Hz baud rate */
-#define SERCOM_SPIM_BAUD_VALUE         (23UL)
+#define SERCOM_SPIM_BAUD_VALUE          (23UL)
 
 //#define DRV_DEBUG
 #define LOG_TAG     "spi"
 #define DBG_LVL     DBG_INFO
 #include <rtdbg.h>
 
-#ifdef BSP_USING_SPI
+#ifdef RT_USING_SPI
 
-#if defined(BSP_USING_SERCOM0_SPI) || defined(BSP_USING_SERCOM1_SPI)
+#if defined(BSP_USING_SPI0) || defined(BSP_USING_SPI1)
 
-#if defined(BSP_USING_I2C0) && defined(BSP_USING_SERCOM0_SPI)
-#error "Please define only 1 of BSP_USING_I2C0 and BSP_USING_SERCOM0_SPI"
+#if defined(BSP_USING_I2C0) && defined(BSP_USING_SPI0)
+#error "Please define only 1 of BSP_USING_I2C0 and BSP_USING_SPI0"
 #endif
 
-#if defined(BSP_USING_SERCOM0_USART) && defined(BSP_USING_SERCOM0_SPI)
-#error "Please define only 1 of BSP_USING_SERCOM0_USART and BSP_USING_SERCOM0_SPI"
+#if defined(BSP_USING_SERCOM0_USART) && defined(BSP_USING_SPI0)
+#error "Please define only 1 of BSP_USING_SERCOM0_USART and BSP_USING_SPI0"
 #endif
 
-#ifdef BSP_USING_SERCOM0_SPI
+#ifdef BSP_USING_SPI0
 #define SPI0_MODULE       SERCOM0_REGS
 #define SPI0_PAD3         PINMUX_PA07D_SERCOM0_PAD3     // PINMUX_PA07D_SERCOM0_PAD3 PINMUX_PA11C_SERCOM0_PAD3
 #define SPI0_PAD2         PINMUX_PA06D_SERCOM0_PAD2     // PINMUX_PA06D_SERCOM0_PAD2 PINMUX_PA10C_SERCOM0_PAD2
@@ -35,7 +35,7 @@
 #define SPI0_PAD0         PINMUX_PA04D_SERCOM0_PAD0     // PINMUX_PA04D_SERCOM0_PAD0 PINMUX_PA08C_SERCOM0_PAD0
 #endif
 
-#ifdef BSP_USING_SERCOM1_SPI
+#ifdef BSP_USING_SPI1
 #define SPI1_MODULE       SERCOM1_REGS
 #define SPI1_PAD3         PINMUX_PA19D_SERCOM3_PAD3     // PINMUX_PA19D_SERCOM3_PAD3 PINMUX_PA25C_SERCOM3_PAD3
 #define SPI1_PAD2         PINMUX_PA18D_SERCOM3_PAD2     // PINMUX_PA18D_SERCOM3_PAD2 PINMUX_PA24C_SERCOM3_PAD2
@@ -56,7 +56,7 @@ struct samd21_spi_config {
 // *****************************************************************************
 static void SERCOM_MSPI_ClockInit ( void )
 {
-#ifdef BSP_USING_SERCOM0_SPI
+#ifdef BSP_USING_SPI0
     /* Selection of the Generator and write Lock for SERCOM0_CORE */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (GCLK_CLKCTRL_ID_SERCOM0_CORE_Val) |
                               GCLK_CLKCTRL_GEN (GCLK_CLKCTRL_GEN_GCLK0_Val)  |
@@ -66,7 +66,7 @@ static void SERCOM_MSPI_ClockInit ( void )
     PM_REGS->PM_APBCMASK |= PM_APBCMASK_SERCOM (1 << 0);
 #endif
 
-#ifdef BSP_USING_SERCOM1_SPI
+#ifdef BSP_USING_SPI1
     /* Selection of the Generator and write Lock for SERCOM1_CORE */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (GCLK_CLKCTRL_ID_SERCOM1_CORE_Val) |
                               GCLK_CLKCTRL_GEN (GCLK_CLKCTRL_GEN_GCLK0_Val)  |
@@ -83,7 +83,7 @@ static void SERCOM_MSPI_ClockInit ( void )
 
 static void SERCOM_MSPI_PortInit ( void )
 {
-#ifdef BSP_USING_SERCOM0_SPI
+#ifdef BSP_USING_SPI0
     /************************** GROUP 0 Initialization *************************/
     PORT_PinMUX_Config (SPI0_PAD0);
     PORT_PinMUX_Config (SPI0_PAD1);
@@ -91,7 +91,7 @@ static void SERCOM_MSPI_PortInit ( void )
     PORT_PinMUX_Config (SPI0_PAD3);
 #endif
 
-#ifdef BSP_USING_SERCOM1_SPI
+#ifdef BSP_USING_SPI1
     /************************** GROUP 0 Initialization *************************/
     PORT_PinMUX_Config (SPI1_PAD0);
     PORT_PinMUX_Config (SPI1_PAD1);
@@ -275,7 +275,7 @@ struct samd21_hw_spi_cs {
     uint16_t GPIO_Pin;
 };
 
-#ifdef BSP_USING_SERCOM0_SPI
+#ifdef BSP_USING_SPI0
 #ifndef SPI0_BUS_CONFIG
 #define SPI0_BUS_CONFIG                             \
     {                                               \
@@ -284,9 +284,9 @@ struct samd21_hw_spi_cs {
         .bus_name = "spi0",                         \
     }
 #endif /* SPI0_BUS_CONFIG */
-#endif /* BSP_USING_SERCOM0_SPI */
+#endif /* BSP_USING_SPI0 */
 
-#ifdef BSP_USING_SERCOM1_SPI
+#ifdef BSP_USING_SPI1
 #ifndef SPI1_BUS_CONFIG
 #define SPI1_BUS_CONFIG                             \
     {                                               \
@@ -295,14 +295,14 @@ struct samd21_hw_spi_cs {
         .bus_name = "spi1",                         \
     }
 #endif /* SPI1_BUS_CONFIG */
-#endif /* BSP_USING_SERCOM1_SPI */
+#endif /* BSP_USING_SPI1 */
 
 static struct samd21_spi_config spi_config[] = {
-#ifdef BSP_USING_SERCOM0_SPI
+#ifdef BSP_USING_SPI0
     SPI0_BUS_CONFIG,
 #endif
 
-#ifdef BSP_USING_SERCOM1_SPI
+#ifdef BSP_USING_SPI1
     SPI1_BUS_CONFIG,
 #endif
 };
@@ -472,5 +472,5 @@ int rt_hw_spi_init (void)
 }
 INIT_DEVICE_EXPORT (rt_hw_spi_init);
 
-#endif /* BSP_USING_SERCOM0_SPI || BSP_USING_SERCOM1_SPI */
-#endif /* BSP_USING_SPI */
+#endif /* BSP_USING_SPI0 || BSP_USING_SPI1 */
+#endif /* RT_USING_SPI */

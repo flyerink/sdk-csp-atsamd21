@@ -1,7 +1,7 @@
 #include "board.h"
 #include <rtthread.h>
 
-#if defined(RT_USING_DEVICE) && defined(RT_USING_PIN)
+#if defined(RT_USING_PIN)
 
 #include "rtdevice.h"
 

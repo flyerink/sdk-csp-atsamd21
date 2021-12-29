@@ -3,7 +3,7 @@
 
 #include <board.h>
 
-#if defined(RT_USING_SPI) && defined(BSP_USING_SERCOM1_SPI)
+#if defined(RT_USING_SPI) && defined(RT_USING_SFUD)
 
 #define DBG_TAG "fla"
 #define DBG_LVL DBG_LOG
@@ -12,12 +12,10 @@
 #define FLASH_CS_PORT       GPIOA
 #define FLASH_CS_PIN        PIN_PA17
 
-#ifdef RT_USING_SFUD
 #include "spi_flash.h"
 
 extern rt_spi_flash_device_t rt_sfud_flash_probe (const char *spi_flash_dev_name,
         const char *spi_dev_name);
-#endif
 
 #ifdef RT_USING_DFS_ELMFAT
 #include "dfs.h"
@@ -32,12 +30,10 @@ int rt_spi_flash_init (void)
 
     rt_hw_spi_device_attach ("spi1", "spi10", FLASH_CS_PORT, FLASH_CS_PIN);
 
-#ifdef RT_USING_SFUD
      if (RT_NULL == rt_sfud_flash_probe ("sst26", "spi10")) {
          LOG_I ("Probe flash fail\r\n");
          return -RT_ERROR;
      };
-#endif
 
 #ifdef RT_USING_DFS_ELMFAT
     if (dfs_mount ("sst26", "/", "elm", 0, 0) == RT_EOK) {
@@ -51,4 +47,4 @@ int rt_spi_flash_init (void)
 }
 INIT_ENV_EXPORT (rt_spi_flash_init);
 
-#endif // defined(RT_USING_SPI) && defined(BSP_USING_SERCOM1_SPI)
+#endif // defined(RT_USING_SPI) && defined(RT_USING_SFUD)

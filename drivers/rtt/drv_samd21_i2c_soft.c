@@ -1,9 +1,9 @@
 #include <rtthread.h>
 #include "board.h"
 
-#if defined(RT_USING_DEVICE) && defined(RT_USING_I2C_BITOPS)
+#if defined(RT_USING_I2C) && defined(RT_USING_I2C_BITOPS)
 
-#if !defined(BSP_USING_SOFT_I2C1) && !defined(BSP_USING_SOFT_I2C2) && !defined(BSP_USING_SOFT_I2C3) && !defined(BSP_USING_SOFT_I2C4)
+#if !defined(BSP_USING_I2C1) && !defined(BSP_USING_I2C2) && !defined(BSP_USING_I2C3) && !defined(BSP_USING_I2C4)
 #error "Please define at least one BSP_USING_I2Cx"
 /* this driver can be disabled at menuconfig → RT-Thread Components → Device Drivers */
 #endif
@@ -22,7 +22,7 @@ struct samd21_i2c {
     struct rt_i2c_bus_device i2c2_bus;
 };
 
-#ifdef BSP_USING_SOFT_I2C1
+#ifdef BSP_USING_I2C1
 #define I2C1_BUS_CONFIG                                  \
     {                                                    \
         .scl = BSP_I2C1_SCL_PIN,                         \
@@ -31,7 +31,7 @@ struct samd21_i2c {
     }
 #endif
 
-#ifdef BSP_USING_SOFT_I2C2
+#ifdef BSP_USING_I2C2
 #define I2C2_BUS_CONFIG                                  \
     {                                                    \
         .scl = BSP_I2C2_SCL_PIN,                         \
@@ -40,7 +40,7 @@ struct samd21_i2c {
     }
 #endif
 
-#ifdef BSP_USING_SOFT_I2C3
+#ifdef BSP_USING_I2C3
 #define I2C3_BUS_CONFIG                                  \
     {                                                    \
         .scl = BSP_I2C3_SCL_PIN,                         \
@@ -49,7 +49,7 @@ struct samd21_i2c {
     }
 #endif
 
-#ifdef BSP_USING_SOFT_I2C4
+#ifdef BSP_USING_I2C4
 #define I2C4_BUS_CONFIG                                  \
     {                                                    \
         .scl = BSP_I2C4_SCL_PIN,                         \
@@ -59,16 +59,16 @@ struct samd21_i2c {
 #endif
 
 static const struct samd21_soft_i2c_config soft_i2c_config[] = {
-#ifdef BSP_USING_SOFT_I2C1
+#ifdef BSP_USING_I2C1
     I2C1_BUS_CONFIG,
 #endif
-#ifdef BSP_USING_SOFT_I2C2
+#ifdef BSP_USING_I2C2
     I2C2_BUS_CONFIG,
 #endif
-#ifdef BSP_USING_SOFT_I2C3
+#ifdef BSP_USING_I2C3
     I2C3_BUS_CONFIG,
 #endif
-#ifdef BSP_USING_SOFT_I2C4
+#ifdef BSP_USING_I2C4
     I2C4_BUS_CONFIG,
 #endif
 };
@@ -121,12 +121,6 @@ static void samd21_set_scl (void *data, rt_int32_t state)
     } else {
         rt_pin_write (cfg->scl, PIN_LOW);
     }
-}
-
-static void samd21_set_sda_mode (void *data, rt_int32_t mode)
-{
-    struct samd21_soft_i2c_config *cfg = (struct samd21_soft_i2c_config *)data;
-    rt_pin_mode (cfg->sda, mode);
 }
 
 /**
@@ -197,7 +191,6 @@ static const struct rt_i2c_bit_ops samd21_bit_ops_default = {
     .data     = RT_NULL,
     .set_sda  = samd21_set_sda,
     .set_scl  = samd21_set_scl,
-    .set_sda_mode = samd21_set_sda_mode,
     .get_sda  = samd21_get_sda,
     .get_scl  = samd21_get_scl,
     .udelay   = samd21_udelay,

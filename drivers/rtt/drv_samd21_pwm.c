@@ -2,22 +2,26 @@
 #include <rtthread.h>
 #include "rtdevice.h"
 
-#if defined(RT_USING_DEVICE) && defined(RT_USING_PWM)
+#if defined(RT_USING_PWM)
 
-#if defined(BSP_USING_TCC1_PWM) && defined(BSP_USING_SERCOM0_USART)
+#if !defined(BSP_USING_PWM1) && !defined(BSP_USING_PWM2)
+#error "Must enable BSP_USING_PWM1 or BSP_USING_PWM2 in board.h"
+#endif
+
+#if defined(BSP_USING_PWM1) && defined(BSP_USING_UART0)
 #error "TCC1 use PA6 & PA7 is conflict with SERCOM0 USART, only 1 enabled"
 #endif
 
 static void TCC_ClockInit (void)
 {
-#ifdef BSP_USING_TCC1_PWM
+#ifdef BSP_USING_PWM1
     /* Selection of the Generator and write Lock for TCC0 TCC1 */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (26) | GCLK_CLKCTRL_GEN (0x0)  | GCLK_CLKCTRL_CLKEN_Msk;
     /* Configure the APBC Bridge Clocks */
     PM_REGS->PM_APBCMASK |= PM_APBCMASK_TCC1_Msk;
 #endif
 
-#ifdef BSP_USING_TCC2_PWM
+#ifdef BSP_USING_PWM2
     /* Selection of the Generator and write Lock for TC3 TCC2 */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (27) | GCLK_CLKCTRL_GEN (0x0)  | GCLK_CLKCTRL_CLKEN_Msk;
     /* Configure the APBC Bridge Clocks */
@@ -30,14 +34,14 @@ static void TCC_ClockInit (void)
 
 static void TCC_PortInit (void)
 {
-#ifdef BSP_USING_TCC1_PWM
+#ifdef BSP_USING_PWM1
     PORT_REGS->GROUP[0].PORT_PINCFG[6] = 0x1;
     PORT_REGS->GROUP[0].PORT_PINCFG[7] = 0x1;
 
     PORT_REGS->GROUP[0].PORT_PMUX[3] = 0x44;
 #endif
 
-#ifdef BSP_USING_TCC2_PWM
+#ifdef BSP_USING_PWM2
     PORT_REGS->GROUP[0].PORT_PINCFG[0] = 0x1;
     PORT_REGS->GROUP[0].PORT_PINCFG[1] = 0x1;
 
@@ -182,7 +186,7 @@ struct samd21_pwm {
     const char *name;
 };
 
-#ifdef BSP_USING_TCC1_PWM
+#ifdef BSP_USING_PWM1
 #define PWM1_CONFIG                         \
     {                                       \
         .tcc_regs = TCC1_REGS,              \
@@ -192,7 +196,7 @@ struct samd21_pwm {
     }
 #endif
 
-#ifdef BSP_USING_TCC2_PWM
+#ifdef BSP_USING_PWM2
 #define PWM2_CONFIG                         \
     {                                       \
         .tcc_regs = TCC2_REGS,              \
@@ -203,10 +207,10 @@ struct samd21_pwm {
 #endif
 
 static struct samd21_pwm samd21_pwm_objs [] = {
-#ifdef BSP_USING_TCC1_PWM
+#ifdef BSP_USING_PWM1
     PWM1_CONFIG,
 #endif
-#ifdef BSP_USING_TCC2_PWM
+#ifdef BSP_USING_PWM2
     PWM2_CONFIG,
 #endif
 };

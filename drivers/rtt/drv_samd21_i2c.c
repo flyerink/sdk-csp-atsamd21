@@ -1,23 +1,23 @@
 #include <rtthread.h>
 #include "board.h"
 
-#if defined(RT_USING_DEVICE) && defined(RT_USING_I2C)
+#if !defined(RT_USING_I2C_BITOPS) && defined(RT_USING_I2C)
 
 #define DBG_TAG "i2c"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
-#if !defined(BSP_USING_SERCOM0_I2C) && !defined(BSP_USING_I2C1) && !defined(BSP_USING_SERCOM2_I2C) && !defined(BSP_USING_I2C3)
+#if !defined(BSP_USING_I2C0) && !defined(BSP_USING_I2C1) && !defined(BSP_USING_I2C2) && !defined(BSP_USING_I2C3)
 #error "Please define at least one BSP_USING_I2Cx"
 /* this driver can be disabled at menuconfig → RT-Thread Components → Device Drivers */
 #endif
 
-#if defined(BSP_USING_SERCOM0_I2C) && defined(BSP_USING_SERCOM0_USART)
-#error "Please define only 1 of BSP_USING_SERCOM0_I2C and BSP_USING_SERCOM0_USART"
+#if defined(BSP_USING_I2C0) && defined(BSP_USING_UART0)
+#error "Please define only 1 of BSP_USING_I2C0 and BSP_USING_UART0"
 #endif
 
-#if defined(BSP_USING_SERCOM0_I2C) && defined(BSP_USING_SERCOM0_SPI)
-#error "Please define only 1 of BSP_USING_SERCOM0_I2C and BSP_USING_SERCOM0_SPI"
+#if defined(BSP_USING_I2C0) && defined(BSP_USING_SPI0)
+#error "Please define only 1 of BSP_USING_I2C0 and BSP_USING_SPI0"
 #endif
 
 #include "rtdevice.h"
@@ -25,13 +25,13 @@
 /* SERCOM I2C baud value */
 #define SERCOM_I2CM_BAUD_VALUE         (0x32U)      // 100K
 
-#ifdef BSP_USING_SERCOM0_I2C
+#ifdef BSP_USING_I2C0
 #define I2C0_MODULE       SERCOM0_REGS
 #define I2C0_PAD1         PINMUX_PA05D_SERCOM0_PAD1     // PINMUX_PA05D_SERCOM0_PAD1 PINMUX_PA09C_SERCOM0_PAD1
 #define I2C0_PAD0         PINMUX_PA04D_SERCOM0_PAD0     // PINMUX_PA04D_SERCOM0_PAD0 PINMUX_PA08C_SERCOM0_PAD0
 #endif
 
-#ifdef BSP_USING_SERCOM2_I2C
+#ifdef BSP_USING_I2C2
 #define I2C2_MODULE       SERCOM2_REGS
 #define I2C2_PAD1         PINMUX_PA09D_SERCOM2_PAD1     // PINMUX_PA09D_SERCOM2_PAD1
 #define I2C2_PAD0         PINMUX_PA08D_SERCOM2_PAD0     // PINMUX_PA08D_SERCOM2_PAD0
@@ -78,7 +78,7 @@ typedef struct samd2x_i2c_config {
 // *****************************************************************************
 rt_inline void SERCOM_I2CM_ClockInit (void)
 {
-#ifdef BSP_USING_SERCOM0_I2C
+#ifdef BSP_USING_I2C0
     /* Selection of the Generator and write Lock for SERCOM2_CORE */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (GCLK_CLKCTRL_ID_SERCOM0_CORE_Val) |
                               GCLK_CLKCTRL_GEN (GCLK_CLKCTRL_GEN_GCLK0_Val) |
@@ -88,7 +88,7 @@ rt_inline void SERCOM_I2CM_ClockInit (void)
     PM_REGS->PM_APBCMASK |= PM_APBCMASK_SERCOM (1 << 0);
 #endif
 
-#ifdef BSP_USING_SERCOM2_I2C
+#ifdef BSP_USING_I2C2
     /* Selection of the Generator and write Lock for SERCOM2_CORE */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (GCLK_CLKCTRL_ID_SERCOM2_CORE_Val) |
                               GCLK_CLKCTRL_GEN (GCLK_CLKCTRL_GEN_GCLK0_Val) |
@@ -105,12 +105,12 @@ rt_inline void SERCOM_I2CM_ClockInit (void)
 
 rt_inline void SERCOM_I2CM_PortInit (void)
 {
-#ifdef BSP_USING_SERCOM0_I2C
+#ifdef BSP_USING_I2C0
     PORT_PinMUX_Config (I2C0_PAD0);
     PORT_PinMUX_Config (I2C0_PAD1);
 #endif
 
-#ifdef BSP_USING_SERCOM2_I2C
+#ifdef BSP_USING_I2C2
     PORT_PinMUX_Config (I2C2_PAD0);
     PORT_PinMUX_Config (I2C2_PAD1);
 #endif
@@ -401,7 +401,7 @@ checkstate:
     return false;
 }
 
-#ifdef BSP_USING_SERCOM0_I2C
+#ifdef BSP_USING_I2C0
 #define I2C0_BUS_CONFIG                                     \
 {                                                           \
     .i2cm_regs = (sercom_i2cm_registers_t *)SERCOM0_REGS,   \
@@ -411,7 +411,7 @@ checkstate:
 }
 #endif
 
-#ifdef BSP_USING_SERCOM2_I2C
+#ifdef BSP_USING_I2C2
 #define I2C2_BUS_CONFIG                                     \
 {                                                           \
     .i2cm_regs = (sercom_i2cm_registers_t *)SERCOM2_REGS,   \
@@ -422,10 +422,10 @@ checkstate:
 #endif
 
 static const samd2x_i2c_config_t samd21_i2c_config[] = {
-#ifdef BSP_USING_SERCOM0_I2C
+#ifdef BSP_USING_I2C0
     I2C0_BUS_CONFIG,
 #endif
-#ifdef BSP_USING_SERCOM2_I2C
+#ifdef BSP_USING_I2C2
     I2C2_BUS_CONFIG,
 #endif
 };

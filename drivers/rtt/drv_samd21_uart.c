@@ -1,9 +1,10 @@
 #include <rtthread.h>
 #include "board.h"
 
-#if defined(RT_USING_DEVICE) && defined(BSP_USING_UART)
+#ifdef RT_USING_SERIAL
+//#if defined(RT_USING_DEVICE) && defined(BSP_USING_UART)
 
-#if !defined(BSP_USING_SERCOM0_USART) && !defined(BSP_USING_SERCOM1_USART) && !defined(BSP_USING_SERCOM2_USART) && !defined(BSP_USING_SERCOM3_USART)
+#if !defined(BSP_USING_UART0) && !defined(BSP_USING_UART3)
 #error "Please define at least one BSP_USING_SERCOMx_USART"
 /* this driver can be disabled at menuconfig → RT-Thread Components → Device Drivers */
 #endif
@@ -11,7 +12,7 @@
 /* SERCOM USART baud value for 115200 Hz baud rate */
 #define SERCOM_USART_INIT_BAUD_VALUE            (63019U)
 
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
 #define USART0_MODULE       SERCOM0_REGS
 #define USART0_TXPO         SERCOM_USART_INT_CTRLA_TXPO (0x1UL)
 #define USART0_RXPO         SERCOM_USART_INT_CTRLA_RXPO (0x3UL)
@@ -19,9 +20,16 @@
 #define USART0_PAD2         PINMUX_PA06D_SERCOM0_PAD2   // PINMUX_PA06D_SERCOM0_PAD2 PINMUX_PA10C_SERCOM0_PAD2
 #define USART0_PAD1         PINMUX_UNUSED               // PINMUX_PA05D_SERCOM0_PAD1 PINMUX_PA09C_SERCOM0_PAD1
 #define USART0_PAD0         PINMUX_UNUSED               // PINMUX_PA04D_SERCOM0_PAD0 PINMUX_PA08C_SERCOM0_PAD0
+
+#ifndef RT_USING_HEAP
+rt_uint8_t uart0_tx_buffer[RT_CONSOLEBUF_SIZE];
+rt_uint8_t uart0_rx_buffer[RT_CONSOLEBUF_SIZE];
+ringbuffer_t uart0_tx_rb;
+ringbuffer_t uart0_rx_rb;
+#endif
 #endif
 
-#ifdef BSP_USING_SERCOM3_USART
+#ifdef BSP_USING_UART3
 #define USART3_MODULE       SERCOM3_REGS
 #define USART3_TXPO         SERCOM_USART_INT_CTRLA_TXPO (0x0UL)
 #define USART3_RXPO         SERCOM_USART_INT_CTRLA_RXPO (0x1UL)
@@ -75,7 +83,7 @@ static rt_uint8_t sercom_get_hardware_index (const void *const hw)
 // *****************************************************************************
 static void SERCOM_USART_ClockInit ( void )
 {
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
     /* Selection of the Generator and write Lock for SERCOM4_CORE */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (GCLK_CLKCTRL_ID_SERCOM0_CORE_Val) |
                               GCLK_CLKCTRL_GEN (GCLK_CLKCTRL_GEN_GCLK0_Val)  |
@@ -85,7 +93,7 @@ static void SERCOM_USART_ClockInit ( void )
     PM_REGS->PM_APBCMASK |= PM_APBCMASK_SERCOM (1 << 0);
 #endif
 
-#ifdef BSP_USING_SERCOM3_USART
+#ifdef BSP_USING_UART3
     /* Selection of the Generator and write Lock for SERCOM3_CORE */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID (GCLK_CLKCTRL_ID_SERCOM3_CORE_Val) |
                               GCLK_CLKCTRL_GEN (GCLK_CLKCTRL_GEN_GCLK0_Val)  |
@@ -103,7 +111,7 @@ static void SERCOM_USART_ClockInit ( void )
 static void SERCOM_USART_PortInit ( void )
 {
     /* Configure the port pins for SERCOM_USART */
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
     /************************** GROUP 1 Initialization *************************/
     PORT_PinMUX_Config (USART0_PAD0);
     PORT_PinMUX_Config (USART0_PAD1);
@@ -111,7 +119,7 @@ static void SERCOM_USART_PortInit ( void )
     PORT_PinMUX_Config (USART0_PAD3);
 #endif
 
-#ifdef BSP_USING_SERCOM3_USART
+#ifdef BSP_USING_UART3
     /************************** GROUP 1 Initialization *************************/
     PORT_PinMUX_Config (USART3_PAD0);
     PORT_PinMUX_Config (USART3_PAD1);
@@ -155,7 +163,7 @@ void SERCOM_USART_Initialize ( sercom_registers_t *usart_regs )
     * Configures Sampling rate
     * Configures IBON
     */
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
     if (usart_regs == USART0_MODULE) {
         /* UART0 use 2 & 3 */
         usart_regs->USART_INT.SERCOM_CTRLA = SERCOM_USART_INT_CTRLA_MODE_USART_INT_CLK |
@@ -163,7 +171,7 @@ void SERCOM_USART_Initialize ( sercom_registers_t *usart_regs )
                                              SERCOM_USART_INT_CTRLA_DORD_Msk | SERCOM_USART_INT_CTRLA_IBON_Msk |
                                              SERCOM_USART_INT_CTRLA_FORM (0x0UL) | SERCOM_USART_INT_CTRLA_SAMPR (0UL);
     } else
-#elif defined BSP_USING_SERCOM3_USART
+#elif defined BSP_USING_UART3
     if (usart_regs == USART3_MODULE) {
         usart_regs->USART_INT.SERCOM_CTRLA = SERCOM_USART_INT_CTRLA_MODE_USART_INT_CLK |
                                              USART3_RXPO | USART3_TXPO |
@@ -227,7 +235,7 @@ bool SERCOM_USART_SerialSetup ( sercom_registers_t *usart_regs, USART_SERIAL_SET
     uint32_t baudValue     = 0;
     uint32_t sampleRate    = 0;
 
-    if ((serialSetup != NULL) & (serialSetup->baudRate != 0)) {
+    if ((serialSetup != RT_NULL) & (serialSetup->baudRate != 0)) {
         if (clkFrequency == 0) {
             clkFrequency = SERCOM_USART_FrequencyGet (usart_regs);
         }
@@ -368,7 +376,7 @@ typedef struct _samd2x_uart_t {
     IRQn_Type vector;
 } SAMD2x_UART_T;
 
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
 static struct rt_serial_device _serial0;
 
 static SAMD2x_UART_T _uart0 = {
@@ -380,13 +388,13 @@ static SAMD2x_UART_T _uart0 = {
 };
 #endif
 
-#ifdef BSP_USING_SERCOM3_USART
+#ifdef BSP_USING_UART3
 static struct rt_serial_device _serial3;
 
 static SAMD2x_UART_T _uart3 = {
     .serial = &_serial3,
-    //.in_rb = NULL,
-    .out_rb = NULL,
+    //.in_rb = RT_NULL,
+    .out_rb = RT_NULL,
     .sercom_reg = USART3_MODULE,
     .vector = SERCOM3_IRQn,
 };
@@ -575,7 +583,7 @@ static void uart_int_cb (SAMD2x_UART_T *uart_handle)
     }
 }
 
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
 void SERCOM0_Handler ( void )
 {
     /* enter interrupt */
@@ -588,7 +596,7 @@ void SERCOM0_Handler ( void )
 }
 #endif
 
-#ifdef BSP_USING_SERCOM3_USART
+#ifdef BSP_USING_UART3
 void SERCOM3_Handler ( void )
 {
     /* enter interrupt */
@@ -611,11 +619,16 @@ int rt_hw_usart_init (void)
 
     config.bufsz = RT_SERIAL_RB_BUFSZ;
 
-#ifdef BSP_USING_SERCOM0_USART
+#ifdef BSP_USING_UART0
     SERCOM_USART_NvicInit (_uart0.vector);
     SERCOM_USART_Initialize (_uart0.sercom_reg);
 
+#ifdef RT_USING_HEAP
     _uart0.out_rb = rt_ringbuffer_create (config.bufsz);
+#else
+    rt_ringbuffer_init(_uart0.out_rb, uart0_tx_buffer, RT_CONSOLEBUF_SIZE);
+#endif
+
     _serial0.config = config;
     _serial0.ops = &_uart_ops;
 
@@ -627,7 +640,7 @@ int rt_hw_usart_init (void)
     }
 #endif
 
-#ifdef BSP_USING_SERCOM3_USART
+#ifdef BSP_USING_UART3
     SERCOM_USART_NvicInit (_uart3.vector);
     SERCOM_USART_Initialize (_uart3.sercom_reg);
 
