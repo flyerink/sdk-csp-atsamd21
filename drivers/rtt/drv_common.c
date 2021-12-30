@@ -18,9 +18,9 @@ static void reboot (uint8_t argc, char **argv)
 {
     rt_hw_cpu_reset();
 }
-MSH_CMD_EXPORT_ALIAS (reboot, __cmd_reboot, Reboot System);
+FINSH_FUNCTION_EXPORT(reboot, Reboot System);
+MSH_CMD_EXPORT(reboot, Reboot System);
 #endif /* RT_USING_FINSH */
-
 
 rt_inline void gclk_sync (void)
 {

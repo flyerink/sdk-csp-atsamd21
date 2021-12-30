@@ -486,6 +486,6 @@ int rt_hw_i2c_init (void)
     return result;
 }
 
-INIT_DEVICE_EXPORT (rt_hw_i2c_init);
+INIT_BOARD_EXPORT (rt_hw_i2c_init);
 
 #endif

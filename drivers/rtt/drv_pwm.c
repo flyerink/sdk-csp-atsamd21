@@ -288,6 +288,6 @@ static int rt_pwm_init (void)
 
     return result;
 }
-INIT_DEVICE_EXPORT (rt_pwm_init);
+INIT_BOARD_EXPORT (rt_pwm_init);
 
 #endif // RT_USING_PWM

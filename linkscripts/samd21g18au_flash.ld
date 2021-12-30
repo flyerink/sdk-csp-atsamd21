@@ -147,6 +147,16 @@ SECTIONS
         _erelocate = .;
     } > ram
 
+    /* stack section */
+    .stack (NOLOAD):
+    {
+        . = ALIGN(8);
+        _sstack = .;
+        . = . + STACK_SIZE;
+        . = ALIGN(8);
+        _estack = .;
+    } > ram
+    
     /* .bss section which is used for uninitialized data */
     .bss (NOLOAD) :
     {
@@ -160,16 +170,6 @@ SECTIONS
         _ezero = .;
     } > ram
     __bss_end = .;
-
-    /* stack section */
-    .stack (NOLOAD):
-    {
-        . = ALIGN(8);
-        _sstack = .;
-        . = . + STACK_SIZE;
-        . = ALIGN(8);
-        _estack = .;
-    } > ram
 
     . = ALIGN(4);
     _end = . ;

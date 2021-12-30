@@ -2,7 +2,14 @@
 #include "board.h"
 
 #ifdef RT_USING_SERIAL
-//#if defined(RT_USING_DEVICE) && defined(BSP_USING_UART)
+
+#define BSP_UART_USING_TX_RBx
+
+#if (RT_CONSOLEBUF_SIZE > 2048)
+#define UART_TX_RB_SIZE RT_CONSOLEBUF_SIZE
+#else
+#define UART_TX_RB_SIZE 2048
+#endif
 
 #if !defined(BSP_USING_UART0) && !defined(BSP_USING_UART3)
 #error "Please define at least one BSP_USING_SERCOMx_USART"
@@ -14,18 +21,18 @@
 
 #ifdef BSP_USING_UART0
 #define USART0_MODULE       SERCOM0_REGS
-#define USART0_TXPO         SERCOM_USART_INT_CTRLA_TXPO (0x1UL)
-#define USART0_RXPO         SERCOM_USART_INT_CTRLA_RXPO (0x3UL)
-#define USART0_PAD3         PINMUX_PA07D_SERCOM0_PAD3   // PINMUX_PA07D_SERCOM0_PAD3 PINMUX_PA11C_SERCOM0_PAD3
-#define USART0_PAD2         PINMUX_PA06D_SERCOM0_PAD2   // PINMUX_PA06D_SERCOM0_PAD2 PINMUX_PA10C_SERCOM0_PAD2
-#define USART0_PAD1         PINMUX_UNUSED               // PINMUX_PA05D_SERCOM0_PAD1 PINMUX_PA09C_SERCOM0_PAD1
-#define USART0_PAD0         PINMUX_UNUSED               // PINMUX_PA04D_SERCOM0_PAD0 PINMUX_PA08C_SERCOM0_PAD0
+#define USART0_TXPO         SERCOM_USART_INT_CTRLA_TXPO (0x0UL)
+#define USART0_RXPO         SERCOM_USART_INT_CTRLA_RXPO (0x1UL)
+#define USART0_PAD3         PINMUX_UNUSED   // PINMUX_PA07D_SERCOM0_PAD3 PINMUX_PA11C_SERCOM0_PAD3
+#define USART0_PAD2         PINMUX_UNUSED   // PINMUX_PA06D_SERCOM0_PAD2 PINMUX_PA10C_SERCOM0_PAD2
+#define USART0_PAD1         PINMUX_PA05D_SERCOM0_PAD1               // PINMUX_PA05D_SERCOM0_PAD1 PINMUX_PA09C_SERCOM0_PAD1
+#define USART0_PAD0         PINMUX_PA04D_SERCOM0_PAD0               // PINMUX_PA04D_SERCOM0_PAD0 PINMUX_PA08C_SERCOM0_PAD0
 
+#ifdef BSP_UART_USING_TX_RB
 #ifndef RT_USING_HEAP
-rt_uint8_t uart0_tx_buffer[RT_CONSOLEBUF_SIZE];
-rt_uint8_t uart0_rx_buffer[RT_CONSOLEBUF_SIZE];
+rt_uint8_t uart0_tx_buffer[UART_TX_RB_SIZE];
 ringbuffer_t uart0_tx_rb;
-ringbuffer_t uart0_rx_rb;
+#endif
 #endif
 #endif
 
@@ -38,12 +45,13 @@ ringbuffer_t uart0_rx_rb;
 #define USART3_PAD1         PINMUX_PA23C_SERCOM3_PAD1   // PINMUX_PA17D_SERCOM3_PAD1 PINMUX_PA23C_SERCOM3_PAD1
 #define USART3_PAD0         PINMUX_PA22C_SERCOM3_PAD0   // PINMUX_PA16D_SERCOM3_PAD0 PINMUX_PA22C_SERCOM3_PAD0
 
+#ifdef BSP_UART_USING_TX_RB
 #ifndef RT_USING_HEAP
-rt_uint8_t uart3_tx_buffer[RT_CONSOLEBUF_SIZE];
-rt_uint8_t uart3_rx_buffer[RT_CONSOLEBUF_SIZE];
+rt_uint8_t uart3_tx_buffer[UART_TX_RB_SIZE];
 ringbuffer_t uart3_tx_rb;
-ringbuffer_t uart3_rx_rb;
 #endif
+#endif
+
 #endif
 
 // *****************************************************************************
@@ -112,7 +120,6 @@ static void SERCOM_USART_PortInit ( void )
 {
     /* Configure the port pins for SERCOM_USART */
 #ifdef BSP_USING_UART0
-    /************************** GROUP 1 Initialization *************************/
     PORT_PinMUX_Config (USART0_PAD0);
     PORT_PinMUX_Config (USART0_PAD1);
     PORT_PinMUX_Config (USART0_PAD2);
@@ -120,7 +127,6 @@ static void SERCOM_USART_PortInit ( void )
 #endif
 
 #ifdef BSP_USING_UART3
-    /************************** GROUP 1 Initialization *************************/
     PORT_PinMUX_Config (USART3_PAD0);
     PORT_PinMUX_Config (USART3_PAD1);
     PORT_PinMUX_Config (USART3_PAD2);
@@ -170,8 +176,9 @@ void SERCOM_USART_Initialize ( sercom_registers_t *usart_regs )
                                              USART0_RXPO | USART0_TXPO |
                                              SERCOM_USART_INT_CTRLA_DORD_Msk | SERCOM_USART_INT_CTRLA_IBON_Msk |
                                              SERCOM_USART_INT_CTRLA_FORM (0x0UL) | SERCOM_USART_INT_CTRLA_SAMPR (0UL);
-    } else
-#elif defined BSP_USING_UART3
+    }
+#endif
+#ifdef BSP_USING_UART3
     if (usart_regs == USART3_MODULE) {
         usart_regs->USART_INT.SERCOM_CTRLA = SERCOM_USART_INT_CTRLA_MODE_USART_INT_CLK |
                                              USART3_RXPO | USART3_TXPO |
@@ -207,6 +214,9 @@ void SERCOM_USART_Initialize ( sercom_registers_t *usart_regs )
 
     /* Disable Receive Complete interrupt */
     usart_regs->USART_INT.SERCOM_INTENCLR = SERCOM_USART_INT_INTENSET_RXC_Msk;
+
+    /* Disable Data Register Empty interrupt */
+    usart_regs->USART_INT.SERCOM_INTENCLR = SERCOM_USART_INT_INTENSET_DRE_Msk;
 }
 
 uint32_t SERCOM_USART_FrequencyGet ( sercom_registers_t *usart_regs )
@@ -370,8 +380,9 @@ void static SERCOM_USART_ISR_ERR_Handler ( sercom_registers_t *usart_regs )
 
 typedef struct _samd2x_uart_t {
     struct rt_serial_device *serial;
-    //struct rt_ringbuffer *in_rb;
+#ifdef BSP_UART_USING_TX_RB
     struct rt_ringbuffer *out_rb;
+#endif
     sercom_registers_t *sercom_reg;
     IRQn_Type vector;
 } SAMD2x_UART_T;
@@ -381,8 +392,9 @@ static struct rt_serial_device _serial0;
 
 static SAMD2x_UART_T _uart0 = {
     .serial = &_serial0,
-    //.in_rb = NULL,
-    .out_rb = NULL,
+#ifdef BSP_UART_USING_TX_RB
+    .out_rb = RT_NULL,
+#endif
     .sercom_reg = USART0_MODULE,
     .vector = SERCOM0_IRQn,
 };
@@ -393,8 +405,9 @@ static struct rt_serial_device _serial3;
 
 static SAMD2x_UART_T _uart3 = {
     .serial = &_serial3,
-    //.in_rb = RT_NULL,
+#ifdef BSP_UART_USING_TX_RB
     .out_rb = RT_NULL,
+#endif
     .sercom_reg = USART3_MODULE,
     .vector = SERCOM3_IRQn,
 };
@@ -506,11 +519,11 @@ static int _uart_putc (struct rt_serial_device *serial, char c)
     uart = (SAMD2x_UART_T *) (serial->parent.user_data);
     usart_regs = uart->sercom_reg;
 
-    if (!rt_ringbuffer_space_len (uart->out_rb))
-        rt_thread_mdelay (5);
-
+#ifndef BSP_UART_USING_TX_RB
+    usart_regs->USART_INT.SERCOM_DATA = c;
+    while (! (usart_regs->USART_INT.SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_DRE_Msk));
+#else
     if (rt_ringbuffer_putchar (uart->out_rb, c) == 0) {
-        rt_ringbuffer_putchar (uart->out_rb, c);
         return 0;
     }
 
@@ -519,6 +532,7 @@ static int _uart_putc (struct rt_serial_device *serial, char c)
         /* Enable Data Register Empty interrupt */
         usart_regs->USART_INT.SERCOM_INTENSET = SERCOM_USART_INT_INTENSET_DRE_Msk;
     }
+#endif
 
     return 1;
 }
@@ -553,7 +567,6 @@ static struct rt_uart_ops _uart_ops = {
 
 static void uart_int_cb (SAMD2x_UART_T *uart_handle)
 {
-    rt_uint8_t c;
     sercom_registers_t *usart_regs;
 
     RT_ASSERT (uart_handle != RT_NULL);
@@ -566,8 +579,10 @@ static void uart_int_cb (SAMD2x_UART_T *uart_handle)
             rt_hw_serial_isr (uart_handle->serial, RT_SERIAL_EVENT_RX_IND);
         }
 
+#ifdef BSP_UART_USING_TX_RB
         if ((usart_regs->USART_INT.SERCOM_INTENSET & SERCOM_USART_INT_INTENSET_DRE_Msk)
             &&  (usart_regs->USART_INT.SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_DRE_Msk)) {
+            rt_uint8_t c;
             if (rt_ringbuffer_getchar (uart_handle->out_rb, &c) == 1) {
                 usart_regs->USART_INT.SERCOM_DATA = c;
             } else {
@@ -575,6 +590,7 @@ static void uart_int_cb (SAMD2x_UART_T *uart_handle)
                 usart_regs->USART_INT.SERCOM_INTENCLR = SERCOM_USART_INT_INTENCLR_DRE_Msk;
             }
         }
+#endif
 
         /* Checks for error flag */
         if ((usart_regs->USART_INT.SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_ERROR_Msk) == SERCOM_USART_INT_INTFLAG_ERROR_Msk) {
@@ -617,16 +633,18 @@ int rt_hw_usart_init (void)
     SERCOM_USART_ClockInit();
     SERCOM_USART_PortInit();
 
-    config.bufsz = RT_SERIAL_RB_BUFSZ;
+    config.bufsz = UART_TX_RB_SIZE;
 
 #ifdef BSP_USING_UART0
     SERCOM_USART_NvicInit (_uart0.vector);
     SERCOM_USART_Initialize (_uart0.sercom_reg);
 
+#ifdef BSP_UART_USING_TX_RB
 #ifdef RT_USING_HEAP
     _uart0.out_rb = rt_ringbuffer_create (config.bufsz);
 #else
-    rt_ringbuffer_init(_uart0.out_rb, uart0_tx_buffer, RT_CONSOLEBUF_SIZE);
+    rt_ringbuffer_init (_uart0.out_rb, uart0_tx_buffer, config.bufsz);
+#endif
 #endif
 
     _serial0.config = config;
@@ -635,7 +653,6 @@ int rt_hw_usart_init (void)
     if (rt_hw_serial_register (&_serial0, "uart0", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX, &_uart0) == RT_EOK) {
         rt_kprintf ("%s register success\n", "uart0");
     } else {
-        rt_kprintf ("%s register failed\n", "uart0");
         result = -RT_ERROR;
     }
 #endif
@@ -644,10 +661,12 @@ int rt_hw_usart_init (void)
     SERCOM_USART_NvicInit (_uart3.vector);
     SERCOM_USART_Initialize (_uart3.sercom_reg);
 
+#ifdef BSP_UART_USING_TX_RB
 #ifdef RT_USING_HEAP
     _uart3.out_rb = rt_ringbuffer_create (config.bufsz);
 #else
-    rt_ringbuffer_init(_uart3.out_rb, uart3_tx_buffer, RT_CONSOLEBUF_SIZE);
+    rt_ringbuffer_init (_uart3.out_rb, uart3_tx_buffer, config.bufsz);
+#endif
 #endif
 
     _serial3.config = config;
@@ -656,7 +675,6 @@ int rt_hw_usart_init (void)
     if (rt_hw_serial_register (&_serial3, "uart3", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX, &_uart3) == RT_EOK) {
         rt_kprintf ("%s register success\n", "uart3");
     } else {
-        rt_kprintf ("%s register failed\n", "uart3");
         result = -RT_ERROR;
     }
 #endif
@@ -664,4 +682,29 @@ int rt_hw_usart_init (void)
     return result;
 }
 
+void rt_hw_console_output (const char *str)
+{
+    rt_size_t i, len = rt_strlen (str);
+
+    if (rt_strcmp (RT_CONSOLE_DEVICE_NAME, "uart3") == 0) {
+        /* Disable Data Register Empty interrupt */
+        USART3_MODULE->USART_INT.SERCOM_INTENCLR = SERCOM_USART_INT_INTENSET_DRE_Msk;
+
+        for (i = 0; i < len; i++) {
+            USART3_MODULE->USART_INT.SERCOM_DATA = str[i];
+            while (! (USART3_MODULE->USART_INT.SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_DRE_Msk));
+        }
+    }
+#ifdef BSP_USING_UART0
+    else if (rt_strcmp (RT_CONSOLE_DEVICE_NAME, "uart0") == 0) {
+        /* Disable Data Register Empty interrupt */
+        USART0_MODULE->USART_INT.SERCOM_INTENCLR = SERCOM_USART_INT_INTENSET_DRE_Msk;
+
+        for (i = 0; i < len; i++) {
+            USART0_MODULE->USART_INT.SERCOM_DATA = str[i];
+            while (! (USART0_MODULE->USART_INT.SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_DRE_Msk));
+        }
+    }
+#endif
+}
 #endif
