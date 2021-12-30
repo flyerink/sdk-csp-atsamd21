@@ -574,7 +574,7 @@ static void uart_int_cb (SAMD2x_UART_T *uart_handle)
 
     if (usart_regs->USART_INT.SERCOM_INTENSET != 0) {
         /* Checks for receive complete empty flag */
-        if ((SERCOM3_REGS->USART_INT.SERCOM_INTENSET & SERCOM_USART_INT_INTENSET_RXC_Msk)
+        if ((usart_regs->USART_INT.SERCOM_INTENSET & SERCOM_USART_INT_INTENSET_RXC_Msk)
             && (usart_regs->USART_INT.SERCOM_INTFLAG & SERCOM_USART_INT_INTFLAG_RXC_Msk)) {
             rt_hw_serial_isr (uart_handle->serial, RT_SERIAL_EVENT_RX_IND);
         }
