@@ -11,7 +11,7 @@
 #define SERCOM_SPIM_BAUD_VALUE          (23UL)
 
 //#define DRV_DEBUG
-#define LOG_TAG     "spi"
+#define LOG_TAG     "SPI"
 #define DBG_LVL     DBG_INFO
 #include <rtdbg.h>
 
@@ -40,10 +40,10 @@
 
 #ifdef BSP_USING_SPI1
 #define SPI1_MODULE       SERCOM1_REGS
-#define SPI1_PAD3         PINMUX_PA19D_SERCOM3_PAD3     // PINMUX_PA19D_SERCOM3_PAD3 PINMUX_PA25C_SERCOM3_PAD3
-#define SPI1_PAD2         PINMUX_PA18D_SERCOM3_PAD2     // PINMUX_PA18D_SERCOM3_PAD2 PINMUX_PA24C_SERCOM3_PAD2
-#define SPI1_PAD1         PINMUX_UNUSED                 // PINMUX_PA17D_SERCOM3_PAD1 PINMUX_PA23C_SERCOM3_PAD1
-#define SPI1_PAD0         PINMUX_PA16D_SERCOM3_PAD0     // PINMUX_PA16D_SERCOM3_PAD0 PINMUX_PA22C_SERCOM3_PAD0
+#define SPI1_PAD3         PINMUX_PA19C_SERCOM1_PAD3     // PINMUX_PA19C_SERCOM1_PAD3
+#define SPI1_PAD2         PINMUX_PA18C_SERCOM1_PAD2     // PINMUX_PA18C_SERCOM1_PAD2
+#define SPI1_PAD1         PINMUX_UNUSED                 // PINMUX_PA17C_SERCOM1_PAD1
+#define SPI1_PAD0         PINMUX_PA16C_SERCOM1_PAD0     // PINMUX_PA16C_SERCOM1_PAD0
 #endif
 
 struct samd21_spi_config {
@@ -147,11 +147,11 @@ rt_err_t SERCOM_SPI_TransferSetup (struct samd21_spi_config *spim_config, struct
     uint32_t baudValue = 0U;
     rt_err_t statusValue = RT_EOK;
 
+    /* Disable the SPI Module */
+    spim_regs->SERCOM_CTRLA &= ~ (SERCOM_SPIM_CTRLA_ENABLE_Msk);
+
     /* Wait for synchronization */
     while ((spim_regs->SERCOM_SYNCBUSY) != 0U);
-
-    /* Disable the SPI Module */
-    spim_regs->SERCOM_CTRLA &= ~ SERCOM_SPIM_CTRLA_ENABLE_Msk;
 
     if (cfg != NULL) {
         if (cfg->mode & RT_SPI_SLAVE) {

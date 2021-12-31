@@ -5,7 +5,7 @@
 
 #if defined(RT_USING_SPI) && defined(RT_USING_SFUD)
 
-#define DBG_TAG "fla"
+#define DBG_TAG "FLA"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
